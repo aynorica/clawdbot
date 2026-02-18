@@ -1,0 +1,13 @@
+{
+  "id": "simpal-whitelist",
+  "name": "SimPal Whitelist",
+  "kind": "system",
+  "version": "0.1.0",
+  "description": "Directory whitelist management for SimPal",
+  "entrypoint": "./index.ts",
+  "configSchema": {
+    "simpal": {
+      "whitelistedPaths": {}
+    }
+  }
+}

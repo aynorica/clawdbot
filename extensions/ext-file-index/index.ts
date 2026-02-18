@@ -24,8 +24,43 @@ import {
 // Module-level DB handle — initialized in gateway_start
 let db: DatabaseSync | null = null;
 
+// Unsubscribe function for whitelist change listener (set up in gateway_start)
+let unsubWhitelistChanged: (() => void) | null = null;
+
 function getDbPath(stateDir: string): string {
   return path.join(stateDir, "file-index.sqlite");
+}
+
+// Lazily import onWhitelistChanged from ext-whitelist (optional peer dependency).
+// If ext-whitelist is not loaded, this is a no-op.
+async function trySubscribeToWhitelistChanges(
+  store: ReturnType<typeof createMetadataStore>,
+  logger: { info: (msg: string) => void; warn: (msg: string) => void },
+): Promise<() => void> {
+  try {
+    // Dynamic import so ext-file-index doesn't hard-depend on ext-whitelist at load time
+    const { onWhitelistChanged } = await import(
+      "../ext-whitelist/index.js" as string
+    ) as { onWhitelistChanged: (cb: (event: "added" | "removed", entry: { path: string }, allEntries: Array<{ path: string }>) => void | Promise<void>) => () => void };
+
+    return onWhitelistChanged(async (event, entry, allEntries) => {
+      if (event === "added") {
+        logger.info(`[ext-file-index] Whitelist added: ${entry.path} — scanning...`);
+        await scanDirectory(entry.path, store, (count) => {
+          logger.info(`[ext-file-index] Scanned ${count} files in ${entry.path}`);
+        });
+      } else if (event === "removed") {
+        logger.info(`[ext-file-index] Whitelist removed: ${entry.path} — purging index...`);
+        store.removeByDirectory(entry.path);
+        logger.info(`[ext-file-index] Purged index entries under ${entry.path}`);
+      }
+      // Log remaining whitelist
+      logger.info(`[ext-file-index] Whitelist now has ${allEntries.length} entr${allEntries.length === 1 ? "y" : "ies"}`);
+    });
+  } catch {
+    // ext-whitelist is not available — silently skip
+    return () => {};
+  }
 }
 
 const plugin = {
@@ -48,6 +83,11 @@ const plugin = {
       const store = createMetadataStore(db);
       const queue = createIndexingQueue(store);
       const watcherService = createWatcherService(queue);
+
+      // Subscribe to whitelist changes from ext-whitelist (if loaded)
+      void trySubscribeToWhitelistChanges(store, api.logger).then((unsub) => {
+        unsubWhitelistChanged = unsub;
+      });
 
       // Register the watcher as a plugin service so it starts/stops with the gateway
       api.registerService(watcherService);
@@ -303,6 +343,11 @@ const plugin = {
 
     // Close DB on gateway_stop
     api.on("gateway_stop", (_event, _ctx) => {
+      // Unsubscribe from whitelist change notifications
+      if (unsubWhitelistChanged) {
+        unsubWhitelistChanged();
+        unsubWhitelistChanged = null;
+      }
       if (db) {
         db.close();
         db = null;

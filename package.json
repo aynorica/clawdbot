@@ -1,20 +1,21 @@
 {
-  "name": "openclaw",
+  "name": "simpal",
   "version": "2026.2.18",
-  "description": "Multi-channel AI gateway with extensible messaging integrations",
+  "description": "SimPal — Personal AI file assistant with local-first indexing and audit logging",
   "keywords": [],
-  "homepage": "https://github.com/openclaw/openclaw#readme",
+  "homepage": "https://github.com/aynorica/clawdbot#readme",
   "bugs": {
-    "url": "https://github.com/openclaw/openclaw/issues"
+    "url": "https://github.com/aynorica/clawdbot/issues"
   },
   "license": "MIT",
   "author": "",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/openclaw/openclaw.git"
+    "url": "git+https://github.com/aynorica/clawdbot.git"
   },
   "bin": {
-    "openclaw": "openclaw.mjs"
+    "openclaw": "openclaw.mjs",
+    "simpal": "openclaw.mjs"
   },
   "directories": {
     "doc": "docs",
@@ -86,6 +87,7 @@
     "mac:restart": "bash scripts/restart-mac.sh",
     "moltbot:rpc": "node scripts/run-node.mjs agent --mode rpc --json",
     "openclaw": "node scripts/run-node.mjs",
+    "simpal": "node scripts/run-node.mjs",
     "openclaw:rpc": "node scripts/run-node.mjs agent --mode rpc --json",
     "plugins:sync": "node --import tsx scripts/sync-plugin-versions.ts",
     "prepack": "pnpm build && pnpm ui:build",

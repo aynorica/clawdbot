@@ -652,6 +652,34 @@ export const OpenClawSchema = z
       })
       .strict()
       .optional(),
+    simpal: z
+      .object({
+        whitelistedPaths: z
+          .record(
+            z.string(),
+            z.array(
+              z.object({
+                path: z.string(),
+                permission: z.enum(["read", "read+write", "read+write+external"]),
+              }),
+            ),
+          )
+          .optional(),
+        fileIndex: z
+          .object({
+            enabled: z.boolean().optional().default(true),
+            maxFileSizeMb: z.number().optional().default(50),
+            ignorePatterns: z.array(z.string()).optional(),
+          })
+          .optional(),
+        audit: z
+          .object({
+            enabled: z.boolean().optional().default(true),
+            retentionDays: z.number().optional().default(365),
+          })
+          .optional(),
+      })
+      .optional(),
   })
   .strict()
   .superRefine((cfg, ctx) => {

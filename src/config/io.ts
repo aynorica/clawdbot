@@ -49,6 +49,34 @@ import { compareOpenClawVersions } from "./version.js";
 export { CircularIncludeError, ConfigIncludeError } from "./includes.js";
 export { MissingEnvVarError } from "./env-substitution.js";
 
+/**
+ * Get environment variable with SIMPAL_* prefix, falling back to OPENCLAW_* for compatibility.
+ */
+export function getEnv(key: string): string | undefined {
+  return process.env[`SIMPAL_${key}`] ?? process.env[`OPENCLAW_${key}`];
+}
+
+/**
+ * One-time migration: If ~/.openclaw/ exists but ~/.simpal/ doesn't, copy it.
+ * Copy, don't move — keep OpenClaw working if installed alongside.
+ */
+function migrateFromOpenClaw(): void {
+  try {
+    const oldDir = path.join(os.homedir(), ".openclaw");
+    const newDir = path.join(os.homedir(), ".simpal");
+    if (fs.existsSync(oldDir) && !fs.existsSync(newDir)) {
+      fs.cpSync(oldDir, newDir, { recursive: true });
+      const oldConfig = path.join(newDir, "openclaw.json");
+      const newConfig = path.join(newDir, "simpal.json");
+      if (fs.existsSync(oldConfig) && !fs.existsSync(newConfig)) {
+        fs.renameSync(oldConfig, newConfig);
+      }
+    }
+  } catch {
+    // Migration is best-effort; silently skip if it fails
+  }
+}
+
 const SHELL_ENV_EXPECTED_KEYS = [
   "OPENAI_API_KEY",
   "ANTHROPIC_API_KEY",
@@ -66,6 +94,8 @@ const SHELL_ENV_EXPECTED_KEYS = [
   "SLACK_APP_TOKEN",
   "OPENCLAW_GATEWAY_TOKEN",
   "OPENCLAW_GATEWAY_PASSWORD",
+  "SIMPAL_GATEWAY_TOKEN",
+  "SIMPAL_GATEWAY_PASSWORD",
 ];
 
 const CONFIG_AUDIT_LOG_FILENAME = "config-audit.jsonl";
@@ -436,7 +466,7 @@ function warnIfConfigFromFuture(cfg: OpenClawConfig, logger: Pick<typeof console
   }
   if (cmp < 0) {
     logger.warn(
-      `Config was last written by a newer OpenClaw (${touched}); current version is ${VERSION}.`,
+      `Config was last written by a newer SimPal (${touched}); current version is ${VERSION}.`,
     );
   }
 }
@@ -527,6 +557,7 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
     candidatePaths.find((candidate) => deps.fs.existsSync(candidate)) ?? requestedConfigPath;
 
   function loadConfig(): OpenClawConfig {
+    migrateFromOpenClaw();
     try {
       maybeLoadDotEnvForConfig(deps.env);
       if (!deps.fs.existsSync(configPath)) {

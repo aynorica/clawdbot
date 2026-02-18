@@ -1,0 +1,7 @@
+{
+  "id": "simpal-file-index",
+  "name": "SimPal File Index",
+  "description": "Real-time file metadata index with chokidar watcher",
+  "version": "0.1.0",
+  "kind": "system"
+}

@@ -97,6 +97,24 @@ export type OpenClawConfig = {
   talk?: TalkConfig;
   gateway?: GatewayConfig;
   memory?: MemoryConfig;
+  simpal?: {
+    whitelistedPaths?: Record<
+      string,
+      Array<{
+        path: string;
+        permission: "read" | "read+write" | "read+write+external";
+      }>
+    >;
+    fileIndex?: {
+      enabled?: boolean;
+      maxFileSizeMb?: number;
+      ignorePatterns?: string[];
+    };
+    audit?: {
+      enabled?: boolean;
+      retentionDays?: number;
+    };
+  };
 };
 
 export type ConfigValidationIssue = {

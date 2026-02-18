@@ -1,0 +1,15 @@
+{
+  "id": "simpal-audit-trail",
+  "name": "SimPal Audit Trail",
+  "description": "Immutable forensic logging of all actions across all nodes",
+  "version": "0.1.0",
+  "kind": "system",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "enabled": { "type": "boolean", "default": true },
+      "retentionDays": { "type": "number", "default": 365 }
+    }
+  }
+}
